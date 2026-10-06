@@ -303,13 +303,12 @@
   const block = (start, end, category, title, extra = {}) =>
     ({ id: `${start}-${end || '24:00'}-${category}`, start, end, category, title, ...extra })
 
-  const SLEEP_NOTE = 'Лечь до 23:30, чтобы встать в 07:30'
+  const SLEEP_NOTE = 'Лечь до 00:00, чтобы встать в 07:30'
 
   const morning = (sofraNote) => [
     block('08:00', '09:00', 'sport',  '🏋️ Зал', { optional: true, note: 'Подъём в 07:30: вода и что-то лёгкое' }),
     block('09:00', '10:00', 'family', 'Завтрак / семья'),
-    block('10:00', '12:00', 'work',   '💼 Работа'),
-    block('12:00', '13:00', 'study',  '📚 Обучение QA'),
+    block('10:00', '13:00', 'work',   '💼 Работа'),
     block('13:00', '14:00', 'rest',   'Обед / отдых'),
     block('14:00', '16:00', 'sofra',  '🚀 Sofra', { note: sofraNote }),
     block('16:00', '18:00', 'work',   '💼 Работа / доступность'),
@@ -321,14 +320,16 @@
       block('18:00', '19:30', 'family', 'Семья / отдых'),
       block('19:30', '20:30', 'family', 'Ужин / семья / душ'),
       block('20:30', '22:30', 'sofra',  '🚀 Sofra'),
-      block('22:30', null,    'rest',   'Отдых / семья', { note: SLEEP_NOTE }),
+      block('22:30', '23:30', 'study',  '📚 Обучение QA'),
+      block('23:30', null,    'rest',   'Отдых / семья', { note: SLEEP_NOTE }),
     ],
     son: [
       ...morning('Если есть рабочие задачи — переключаюсь на работу'),
       block('18:00', '21:00', 'family', '👨‍👩‍👦 Семья / время с сыном'),
       block('21:00', '22:00', 'family', '👶 Укладывание сына'),
-      block('22:00', '23:00', 'sofra',  '🚀 Sofra', { note: 'Только если есть силы. Не обязательный блок.' }),
-      block('23:00', null,    'rest',   'Отдых / сон', { note: SLEEP_NOTE }),
+      block('22:00', '23:00', 'study',  '📚 Обучение QA'),
+      block('23:00', '23:30', 'sofra',  '🚀 Sofra', { note: 'Только если есть силы. Не обязательный блок.' }),
+      block('23:30', null,    'rest',   'Отдых / сон', { note: SLEEP_NOTE }),
     ],
   }
 
@@ -522,5 +523,8 @@
 })()
 </script>
 
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {})
+</script>
 </body>
 </html>
