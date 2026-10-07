@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Мой зал</title>
+<meta name="theme-color" content="#f6f6f3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Мой зал">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+<style>
+  /* Как «Мой день»: одна колонка 560px по центру, светлый фон, белые карточки.
+     Шапка → дни недели → название тренировки → карточки упражнений → «Закончить».
+     Одна светлая тема, все цвета заданы явно. */
+  :root {
+    --bg: #f6f6f3;
+    --card: #ffffff;
+    --ink: #1f2328;
+    --ink-2: #5d6470;
+    --ink-3: #8b929c;
+    --line: rgba(0, 0, 0, 0.07);
+    --line-2: #dcdcd5;
+    --track: #ebebe5;
+    --panel: #f4f4f0;
+    --ring: #d6d8dc;
+    --focus: #5b7cfa;
+    --accent: #2f9e6a;
+    --accent-soft: #e5f3eb;
+    --fig: #2b3038;
+    --fig-far: #b3b8bf;
+    --eq: #b8bdc4;
+    --eq-fill: #e8eaec;
+    --eq-fill-2: #d4d8dd;
+    --eq-dark: #6f767f;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input { font: inherit; color: inherit; }
+
+  .page {
+    max-width: 560px;
+    margin: 0 auto;
+    padding-block: max(28px, env(safe-area-inset-top)) max(56px, env(safe-area-inset-bottom));
+    padding-inline: 16px;
+  }
+
+  /* ── Шапка ── */
+
+  .header h1 {
+    margin: 0;
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .date { margin: 6px 0 0; color: var(--ink-2); font-size: 16px; }
+
+  .link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* ── Дни недели ── */
+
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 3px;
+    margin-top: 20px;
+    padding: 4px;
+    background: var(--track);
+    border-radius: 14px;
+  }
+
+  .day-btn {
+    position: relative;
+    min-height: 48px;
+    padding: 0;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .day-btn.rest { color: var(--ink-3); font-weight: 500; }
+
+  .day-btn.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .day-btn.today::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    width: 5px;
+    height: 5px;
+    margin-left: -2.5px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ── Тренировка ── */
+
+  .workout { margin-top: 22px; }
+
+  .workout h2 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  .meta { margin: 6px 0 0; color: var(--ink-2); font-size: 15px; }
+
+  .mode-line { margin: 8px 0 0; color: var(--ink-3); font-size: 13px; line-height: 1.4; }
+  .mode-line strong { color: var(--accent); font-weight: 600; }
+
+  .list { display: grid; gap: 12px; margin-top: 18px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .eyebrow {
+    color: var(--ink-3);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Кардио: компактная строка */
+  .cardio { padding: 12px 14px 14px 12px; }
+
+  .cardio-row { display: flex; align-items: center; gap: 14px; }
+
+  .cardio-tech { margin: 10px 0 0 2px; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
+
+  .cardio-pic {
+    flex: none;
+    width: 88px;
+    height: 56px;
+    padding: 2px;
+    border-radius: 10px;
+    background: var(--panel);
+  }
+
+  .cardio-body { flex: 1; min-width: 0; }
+
+  .cardio h3 { margin: 2px 0 0; font-size: 17px; font-weight: 650; line-height: 1.25; }
+
+  .cardio-time { margin: 2px 0 0; color: var(--ink); font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .check {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 2px solid var(--ring);
+    border-radius: 50%;
+    background: var(--card);
+    color: transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .check svg { width: 22px; height: 22px; }
+
+  .check[aria-checked="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--card);
+  }
+
+  /* Упражнение */
+  .ex { padding: 16px; }
+
+  .ex-head { display: flex; align-items: baseline; gap: 10px; }
+
+  .num {
+    flex: none;
+    color: var(--ink-3);
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ex h3 { flex: 1; min-width: 0; margin: 0; font-size: 19px; line-height: 1.25; font-weight: 650; }
+
+  .done-tag {
+    flex: none;
+    align-self: center;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .pic-box {
+    height: 128px;
+    margin-top: 12px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--panel);
+  }
+
+  .pic-btn {
+    display: grid; place-items: center; width: 100%; min-height: 40px; margin-top: 6px; text-decoration: none;
+    border: 0; border-radius: 10px; background: transparent;
+    color: var(--accent); font-size: 14px; font-weight: 600; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .pic-btn:active { background: var(--accent-soft); }
+
+  .reps {
+    margin-top: 8px;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tech { margin: 4px 0 0; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+  }
+
+  .row-label { color: var(--ink-2); font-size: 15px; font-weight: 500; }
+
+  .row-label small { display: block; color: var(--ink-3); font-size: 12px; font-weight: 400; }
+
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    background: var(--track);
+    border-radius: 14px;
+  }
+
+  .step {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 11px;
+    background: var(--card);
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .w-field { display: flex; align-items: baseline; gap: 3px; padding: 0 6px; }
+
+  .w-input {
+    width: 3.4em;
+    padding: 6px 0;
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .w-input::placeholder { color: var(--ink-3); font-weight: 500; }
+
+  .unit { color: var(--ink-2); font-size: 15px; font-weight: 500; }
+
+  .bw { color: var(--ink-3); font-size: 15px; }
+
+  .sets-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .sets { display: flex; gap: 8px; justify-content: space-between; }
+
+  .set {
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 2px solid var(--ring);
+    border-radius: 50%;
+    background: var(--card);
+    color: var(--ink-3);
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .set.opt { border-style: dashed; }
+  .set.warm { border-style: dashed; color: var(--ink-3); font-size: 14px; }
+  .set.warm[aria-checked="true"] { background: var(--track); border-color: var(--ring); color: var(--ink-2); }
+  .warm-note { color: var(--ink-3); }
+
+  .set[aria-checked="true"] { background: var(--accent); border-color: var(--accent); color: var(--card); }
+
+  .set svg { width: 22px; height: 22px; }
+
+  .ex.done { border-color: color-mix(in srgb, var(--accent) 35%, transparent); }
+  .ex.done .pic-box, .ex.done .reps, .ex.done .tech { opacity: 0.45; }
+  .cardio.done .cardio-pic, .cardio.done .cardio-body, .cardio.done .cardio-tech { opacity: 0.45; }
+
+  /* Отдых и конец тренировки */
+  .rest-card, .finished { padding: 18px; }
+
+  .rest-card p, .finished p { margin: 0; color: var(--ink-2); font-size: 15px; line-height: 1.45; }
+
+  .rest-card p + p, .finished p + p { margin-top: 8px; }
+
+  .rest-card strong { color: var(--ink); font-weight: 600; }
+
+  .finished h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; font-size: 19px; font-weight: 650; }
+
+  .finished h3 .check { width: 32px; height: 32px; cursor: default; }
+  .finished h3 .check svg { width: 18px; height: 18px; }
+
+  .btn {
+    width: 100%;
+    min-height: 56px;
+    margin-top: 20px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--ink);
+    color: var(--card);
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn.secondary { margin-top: 14px; min-height: 48px; background: var(--track); color: var(--ink); font-size: 16px; }
+
+  .finished .link { margin-top: 12px; font-size: 15px; }
+
+  /* Первая настройка */
+  .setup { display: grid; gap: 12px; margin-top: 22px; }
+  .q { padding: 16px; }
+  .q.dim { opacity: 0.45; }
+  .q h3 { margin: 4px 0 0; font-size: 19px; font-weight: 650; line-height: 1.25; }
+  .q .pic-box { height: 110px; }
+  .choices { display: grid; gap: 8px; margin-top: 12px; }
+  .choice {
+    display: grid; gap: 2px; text-align: left;
+    min-height: 56px; padding: 10px 14px;
+    border: 2px solid var(--ring); border-radius: 12px;
+    background: var(--card); cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .choice strong { font-weight: 600; }
+  .choice small { color: var(--ink-2); font-size: 13px; }
+  .choice.on { border-color: var(--accent); background: var(--accent-soft); }
+  .choice:disabled { cursor: default; }
+  .setup .btn { margin-top: 6px; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .row-label small.up { color: var(--accent); }
+  .foot { margin: 18px 4px 0; color: var(--ink-3); font-size: 13px; line-height: 1.45; }
+  .foot .link { font-size: 13px; }
+
+  @media (hover: hover) {
+    .day-btn:not(.active):hover { color: var(--ink); }
+    .set:hover, .check:hover { border-color: var(--accent); }
+  }
+
+  @media (max-width: 380px) {
+    .ex { padding: 14px; }
+    .cardio-pic { width: 72px; height: 48px; }
+    .sets { gap: 8px; }
+    .set { width: 44px; height: 44px; }
+    .step { width: 40px; height: 40px; }
+    .w-input { width: 2.8em; font-size: 20px; }
+    .day-btn { font-size: 14px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+
+  .pic { display: block; width: 100%; height: 100%; }
+  .pic .fig { fill: var(--fig); }
+  .pic .far { fill: var(--fig-far); }
+  .pic .frame { fill: none; stroke: var(--eq-dark); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+  .pic .rail { fill: none; stroke: var(--eq); stroke-width: 2.2; stroke-linecap: round; }
+  .pic .cable { fill: none; stroke: var(--eq-dark); stroke-width: 1.5; }
+  .pic .pad-o { fill: none; stroke: var(--eq-dark); stroke-linecap: round; }
+  .pic .pad-i { fill: none; stroke: var(--eq-fill-2); stroke-linecap: round; }
+  .pic .pad-i2 { fill: var(--eq-fill-2); }
+  .pic .padr { fill: var(--eq-fill-2); stroke: var(--eq-dark); stroke-width: 1.5; }
+  .pic .plate { fill: var(--eq-dark); }
+  .pic .pin { fill: var(--accent); }
+  .pic .pulley { fill: var(--card); stroke: var(--eq-dark); stroke-width: 1.8; }
+  .pic .grip { fill: none; stroke: var(--eq-dark); stroke-width: 4.5; stroke-linecap: round; }
+  .pic .wheel { fill: var(--eq-fill-2); stroke: var(--eq-dark); stroke-width: 3; }
+  .pic .wt { fill: var(--eq-dark); }
+  .pic .floor { fill: none; stroke: var(--line-2); stroke-width: 2; stroke-linecap: round; }
+
+</style>
+
+<main class="page" id="app"></main>
+
+<script>
+// Схемы упражнений с анимацией. Холст 160×100.
+// Человечек собирается из суставов: конечности сужаются к кистям и стопам,
+// дальние конечности светлее. У каждого упражнения две позы (A — начало,
+// B — усилие); картинка плавно идёт A→B (быстрее) и B→A (медленнее).
+const PICS = (() => {
+  const f = (p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`
+
+  // Сужающийся сегмент с круглыми концами: от p (ширина w1) к q (ширина w2).
+  function seg(p, q, w1, w2) {
+    const dx = q[0] - p[0], dy = q[1] - p[1], len = Math.hypot(dx, dy) || 1
+    const nx = -dy / len, ny = dx / len, a = w1 / 2, b = w2 / 2
+    const p1 = [p[0] + nx * a, p[1] + ny * a], p2 = [q[0] + nx * b, q[1] + ny * b]
+    const p3 = [q[0] - nx * b, q[1] - ny * b], p4 = [p[0] - nx * a, p[1] - ny * a]
+    return `M${f(p1)} L${f(p2)} A${b} ${b} 0 0 0 ${f(p3)} L${f(p4)} A${a} ${a} 0 0 0 ${f(p1)} Z`
+  }
+  const circle = (p, r, cls) => `<circle class="${cls}" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r}"/>`
+  const path = (d, cls) => `<path class="${cls}" d="${d}"/>`
+
+  // Рука: [плечо, локоть, кисть]. Нога: [таз, колено, лодыжка, носок?].
+  function arm([s, e, w], cls) {
+    return path(seg(s, e, 7.5, 6), cls) + path(seg(e, w, 6, 4.6), cls) + circle(w, 3.2, cls)
+  }
+  function leg([h, k, a, t], cls) {
+    return path(seg(h, k, 9.5, 7.5), cls) + path(seg(k, a, 7.5, 5.2), cls) +
+      (t ? path(seg(a, t, 5.2, 4.4), cls) : circle(a, 2.8, cls))
+  }
+  // Фигура. front: true — вид спереди (широкий корпус).
+  let machineOnly = false
+  function person(P, o = {}) {
+    if (machineOnly) return ''
+    const out = []
+    ;(P.farLegs || []).forEach((l) => out.push(leg(l, 'far')))
+    ;(P.farArms || []).forEach((a) => out.push(arm(a, 'far')))
+    ;(P.legs || []).forEach((l) => out.push(leg(l, 'fig')))
+    out.push(path(seg(o.front ? [P.neck[0], P.neck[1] + 5] : P.neck, P.hip, o.front ? 21 : 13, o.front ? 15 : 11), 'fig'))
+    out.push(path(seg(P.neck, P.head, 5.5, 5.5), 'fig'))
+    ;(P.arms || []).forEach((a) => out.push(arm(a, 'fig')))
+    out.push(circle(P.head, 6.8, 'fig'))
+    return out.join('')
+  }
+
+  // Оборудование
+  const tube = (d) => path(d, 'frame')           // рама: тёмная труба
+  const rail = (d) => path(d, 'rail')            // тонкая направляющая
+  const cable = (p, q) => `<path class="cable" d="M${f(p)} L${f(q)}"/>`
+  const path2 = (d, cls, w) => `<path class="${cls}" style="stroke-width:${w}" d="${d}"/>`
+  // Мягкая подушка по линии: тёмная обводка + светлая середина
+  const padLine = (d, w) => path2(d, 'pad-o', w + 3) + path2(d, 'pad-i', w)
+  const grip = (p, q) => `<path class="grip" d="M${f(p)} L${f(q)}"/>`
+  const vgrip = (w, l = 7) => grip([w[0], w[1] - l], [w[0], w[1] + l])
+  const hgrip = (w, l = 7) => grip([w[0] - l, w[1]], [w[0] + l, w[1]])
+  const floor = (x1, x2, y = 94) => `<path class="floor" d="M${x1} ${y} L${x2} ${y}"/>`
+  const pulley = (p, r = 4) => circle(p, r, 'pulley') + circle(p, 1.2, 'wt')
+  const pivot = (p) => circle(p, 2.6, 'pulley')
+  // Стек грузов: плитки одна над другой, две направляющие, штырь в выбранной плитке
+  function stack(x, y, n = 7, w = 13, h = 4.2) {
+    let out = rail(`M${x + 3} ${y - 8} V${y + n * (h + 1)}`) + rail(`M${x + w - 3} ${y - 8} V${y + n * (h + 1)}`)
+    for (let i = 0; i < n; i++) out += `<rect class="plate" x="${x}" y="${(y + i * (h + 1)).toFixed(1)}" width="${w}" height="${h}" rx="1"/>`
+    out += `<rect class="pin" x="${x - 3}" y="${(y + 2 * (h + 1) + 1).toFixed(1)}" width="${w + 6}" height="2" rx="1"/>`
+    return out
+  }
+  const dumbbell = (w) => machineOnly ? '' : `<rect class="wt" x="${w[0] - 8}" y="${w[1] - 5.5}" width="4.5" height="11" rx="1.8"/><rect class="wt" x="${w[0] + 3.5}" y="${w[1] - 5.5}" width="4.5" height="11" rx="1.8"/>` + grip([w[0] - 5, w[1]], [w[0] + 5, w[1]])
+  const dbFront = (w) => machineOnly ? '' : circle(w, 5.5, 'wt') + circle(w, 2.2, 'pulley')
+  const roller = (p) => circle(p, 5.4, 'pad-o') + circle(p, 3.6, 'pad-i2')
+  const bigPlate = (p) => circle(p, 6.5, 'wt') + circle(p, 2, 'pulley')
+  const perp = (k, a, d) => { const dx = a[0] - k[0], dy = a[1] - k[1], l = Math.hypot(dx, dy) || 1; return [a[0] + dy / l * d, a[1] - dx / l * d] }
+
+  // Двухзвенная обратная кинематика: где колено (локоть), если известны таз и стопа
+  function ik(a, b, l1, l2, side = 1) {
+    const dx = b[0] - a[0], dy = b[1] - a[1]
+    let d = Math.hypot(dx, dy); const lim = l1 + l2 - 0.01
+    if (d > lim) d = lim
+    const x = (d * d + l1 * l1 - l2 * l2) / (2 * d)
+    const h = Math.sqrt(Math.max(0, l1 * l1 - x * x))
+    const ux = dx / Math.hypot(dx, dy), uy = dy / Math.hypot(dx, dy)
+    return [a[0] + ux * x - uy * h * side, a[1] + uy * x + ux * h * side]
+  }
+
+  // Интерполяция поз
+  const lerp = (a, b, t) => Array.isArray(a) ? a.map((v, i) => lerp(v, b[i], t))
+    : (a && typeof a === 'object') ? Object.fromEntries(Object.keys(a).map((k) => [k, lerp(a[k], b[k], t)]))
+    : a + (b - a) * t
+
+  // Сцены: A, B — позы; draw(P) — картинка для интерполированной позы.
+  const S = {}
+
+  S.treadmill = {
+    cycle: [650, 0, 650, 0], linear: true,
+    A: { head: [78, 12], neck: [76, 21], hip: [72, 50],
+      legs: [[[72, 50], [82, 64], [86, 80], [93, 80]]], farLegs: [[[72, 50], [64, 66], [59, 82], [66, 82]]],
+      arms: [[[75, 26], [66, 37], [69, 46]]], farArms: [[[75, 26], [84, 37], [91, 31]]] },
+    B: { head: [78, 12], neck: [76, 21], hip: [72, 50],
+      legs: [[[72, 50], [65, 66], [60, 82], [67, 82]]], farLegs: [[[72, 50], [81, 64], [87, 80], [94, 80]]],
+      arms: [[[75, 26], [84, 37], [91, 31]]], farArms: [[[75, 26], [66, 37], [69, 46]]] },
+    draw: (P) => tube('M112 86 L126 36') + tube('M118 38 L138 34') + `<rect class="padr" x="128" y="27" width="12" height="8" rx="2" transform="rotate(-12 134 31)"/>` +
+      padLine('M30 87 H118', 5) + tube('M26 92 H122') + person(P)
+  }
+
+  S.chestPress = {
+    A: { head: [49, 15], neck: [48, 24], hip: [50, 58],
+      legs: [[[50, 58], [73, 58], [75, 88], [82, 88]]], farLegs: [[[50, 58], [70, 60], [70, 88], [77, 88]]],
+      arms: [[[49, 29], [57, 41], [65, 31]]], farArms: [[[49, 31], [56, 44], [64, 35]]] },
+    B: { head: [49, 15], neck: [48, 24], hip: [50, 58],
+      legs: [[[50, 58], [73, 58], [75, 88], [82, 88]]], farLegs: [[[50, 58], [70, 60], [70, 88], [77, 88]]],
+      arms: [[[49, 29], [71, 33], [91, 31]]], farArms: [[[49, 31], [70, 36], [90, 35]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(26, 150) + stack(130, 36) + tube('M54 64 V94') + tube('M122 94 V12 H104') + tube('M44 94 H64') +
+        padLine('M37 20 V60', 8) + padLine('M42 64 H70', 6) +
+        tube(`M${f([w[0], w[1] - 8])} L110 14`) + pivot([110, 14]) + person(P) + vgrip(w)
+    }
+  }
+
+  S.inclineDB = {
+    A: { head: [53, 41], neck: [60, 46], hip: [84, 64],
+      legs: [[[84, 64], [106, 60], [110, 90], [117, 90]]],
+      arms: [[[63, 47], [75, 46], [72, 36]]], farArms: [[[63, 50], [76, 50], [74, 40]]] },
+    B: { head: [53, 41], neck: [60, 46], hip: [84, 64],
+      legs: [[[84, 64], [106, 60], [110, 90], [117, 90]]],
+      arms: [[[63, 47], [72, 38], [80, 26]]], farArms: [[[63, 50], [73, 42], [82, 30]]] },
+    draw: (P) => floor(24, 136) + tube('M92 72 V94') + tube('M56 50 L50 94') + tube('M62 70 H104') +
+      padLine('M86 70 L44 40', 9) + padLine('M84 72 H104', 7) + person(P) + dumbbell(P.arms[0][2])
+  }
+
+  S.pecDeck = {
+    A: { head: [80, 14], neck: [80, 23], hip: [80, 57],
+      legs: [[[80, 57], [68, 72], [66, 90]], [[80, 57], [92, 72], [94, 90]]],
+      arms: [[[70, 27], [56, 35], [48, 22]], [[90, 27], [104, 35], [112, 22]]] },
+    B: { head: [80, 14], neck: [80, 23], hip: [80, 57],
+      legs: [[[80, 57], [68, 72], [66, 90]], [[80, 57], [92, 72], [94, 90]]],
+      arms: [[[70, 27], [60, 42], [67, 24]], [[90, 27], [100, 42], [93, 24]]] },
+    draw: (P) => floor(14, 146) + stack(22, 40) + tube('M80 66 V94') + tube('M44 10 H116') + tube('M44 10 V30') + tube('M116 10 V30') +
+      padLine('M80 14 V56', 14) + padLine('M64 62 H96', 6) + person(P, { front: true }) +
+      padLine(`M${f([P.arms[0][2][0], P.arms[0][2][1] - 11])} V${P.arms[0][2][1] + 9}`, 5) +
+      padLine(`M${f([P.arms[1][2][0], P.arms[1][2][1] - 11])} V${P.arms[1][2][1] + 9}`, 5)
+  }
+
+  S.pushdown = {
+    A: { head: [84, 14], neck: [82, 23], hip: [79, 52],
+      legs: [[[79, 52], [81, 71], [82, 90], [89, 90]]], farLegs: [[[79, 52], [76, 71], [74, 90], [81, 90]]],
+      arms: [[[82, 27], [84, 43], [97, 34]]] },
+    B: { head: [84, 14], neck: [82, 23], hip: [79, 52],
+      legs: [[[79, 52], [81, 71], [82, 90], [89, 90]]], farLegs: [[[79, 52], [76, 71], [74, 90], [81, 90]]],
+      arms: [[[82, 27], [84, 43], [99, 58]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(56, 150) + stack(130, 34) + tube('M124 94 V8 H112') + pulley([112, 13]) +
+        cable([112, 17], [w[0] + 2, w[1] - 2]) + person(P) + hgrip(w, 7)
+    }
+  }
+
+  S.pulldown = {
+    A: { head: [80, 30], neck: [80, 39], hip: [80, 72],
+      legs: [[[80, 72], [69, 80], [67, 92]], [[80, 72], [91, 80], [93, 92]]],
+      arms: [[[69, 43], [57, 30], [50, 16]], [[91, 43], [103, 30], [110, 16]]] },
+    B: { head: [80, 30], neck: [80, 39], hip: [80, 72],
+      legs: [[[80, 72], [69, 80], [67, 92]], [[80, 72], [91, 80], [93, 92]]],
+      arms: [[[69, 43], [54, 54], [58, 36]], [[91, 43], [106, 54], [102, 36]]] },
+    draw: (P) => {
+      const l = P.arms[0][2], r = P.arms[1][2], y = l[1] + 3
+      return floor(14, 146) + stack(22, 34) + tube('M36 94 V6 H80') + pulley([80, 8]) + cable([80, 12], [80, y - 7]) +
+        `<path class="grip" d="M${l[0] - 10} ${y} Q 80 ${y - 8} ${r[0] + 10} ${y}"/>` +
+        tube('M80 82 V94') + tube('M66 94 H94') + padLine('M60 78 H100', 6) + person(P, { front: true }) + padLine('M62 62 H98', 5)
+    }
+  }
+
+  S.seatedRow = {
+    A: { head: [55, 30], neck: [55, 39], hip: [54, 70],
+      legs: [[[54, 70], [78, 62], [104, 70], [108, 76]]], farLegs: [[[54, 70], [76, 64], [101, 72], [105, 78]]],
+      arms: [[[55, 43], [68, 52], [80, 55]]] },
+    B: { head: [49, 30], neck: [50, 39], hip: [54, 70],
+      legs: [[[54, 70], [78, 62], [104, 70], [108, 76]]], farLegs: [[[54, 70], [76, 64], [101, 72], [105, 78]]],
+      arms: [[[50, 43], [42, 56], [60, 59]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(10, 150) + stack(138, 34) + tube('M32 82 V94') + tube('M90 82 V94') + padLine('M24 79 H98', 6) +
+        padLine('M104 62 L110 88', 6) + tube('M134 94 V40') + pulley([129, 74]) +
+        cable([125, 73], [w[0] + 1, w[1]]) + person(P) + vgrip(w, 6)
+    }
+  }
+
+  S.chestRow = {
+    A: { head: [70, 24], neck: [66, 32], hip: [54, 62],
+      legs: [[[54, 62], [77, 64], [79, 90], [86, 90]]], farLegs: [[[54, 62], [73, 66], [74, 90], [81, 90]]],
+      arms: [[[66, 36], [83, 42], [98, 45]]] },
+    B: { head: [70, 24], neck: [66, 32], hip: [54, 62],
+      legs: [[[54, 62], [77, 64], [79, 90], [86, 90]]], farLegs: [[[54, 62], [73, 66], [74, 90], [81, 90]]],
+      arms: [[[66, 36], [57, 46], [83, 46]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(20, 140) + tube('M53 72 V94') + tube('M44 94 H62') + padLine('M40 69 H66', 6) + tube('M78 58 V94') + padLine('M74 28 L78 58', 8) +
+        tube(`M${f([w[0], w[1] + 7])} L114 88`) + tube('M104 94 H128') + pivot([114, 88]) + bigPlate([108, 83]) + person(P) + vgrip(w)
+    }
+  }
+
+  S.cableCurl = {
+    A: { head: [82, 14], neck: [80, 23], hip: [78, 52],
+      legs: [[[78, 52], [80, 71], [81, 90], [88, 90]]], farLegs: [[[78, 52], [75, 71], [73, 90], [80, 90]]],
+      arms: [[[80, 27], [81, 44], [92, 53]]] },
+    B: { head: [82, 14], neck: [80, 23], hip: [78, 52],
+      legs: [[[78, 52], [80, 71], [81, 90], [88, 90]]], farLegs: [[[78, 52], [75, 71], [73, 90], [80, 90]]],
+      arms: [[[80, 27], [81, 44], [93, 31]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(56, 154) + stack(140, 30) + tube('M136 94 V10') + pulley([130, 86]) +
+        cable([127, 83], [w[0] + 2, w[1] + 2]) + person(P) + hgrip(w, 7)
+    }
+  }
+
+  S.legPress = {
+    A: { head: [23, 52], neck: [29, 59], hip: [49, 79],
+      legs: [[[49, 79], [60, 55], [82, 65], [88, 59]]], farLegs: [[[49, 79], [57, 58], [79, 68], [85, 62]]],
+      arms: [[[32, 62], [41, 74], [51, 85]]] },
+    B: { head: [23, 52], neck: [29, 59], hip: [49, 79],
+      legs: [[[49, 79], [75, 65], [100, 52], [106, 46]]], farLegs: [[[49, 79], [72, 68], [97, 55], [103, 49]]],
+      arms: [[[32, 62], [41, 74], [51, 85]]] },
+    draw: (P) => {
+      const t = P.legs[0][3], c = [t[0] - 8, t[1] + 8], d = 0.707
+      const a = [c[0] - 14 * d + 4, c[1] - 14 * d - 4], b = [c[0] + 14 * d + 4, c[1] + 14 * d - 4]
+      return floor(8, 152) + rail('M66 86 L130 22') + tube('M70 90 L134 26') + tube('M134 26 V94') + tube('M40 86 V94') + tube('M62 86 V94') +
+        padLine('M20 60 L44 84', 9) + padLine('M44 87 H64', 7) +
+        tube(`M${f(a)} L${f(b)}`) + bigPlate([b[0] + 3, b[1] - 10]) + bigPlate([b[0] + 7, b[1] - 6]) + person(P)
+    }
+  }
+
+  S.legCurl = {
+    A: { head: [35, 58], neck: [44, 62], hip: [74, 63],
+      arms: [[[46, 63], [36, 69], [24, 67]]],
+      legs: [[[74, 63], [97, 64], [119, 66], [126, 66]]] },
+    B: { head: [35, 58], neck: [44, 62], hip: [74, 63],
+      arms: [[[46, 63], [36, 69], [24, 67]]],
+      legs: [[[74, 63], [97, 64], [108, 45], [111, 38]]] },
+    draw: (P) => {
+      const [, k, a] = P.legs[0], r = perp(k, a, 6)
+      return floor(8, 152) + stack(138, 44) + tube('M134 94 V30') + padLine('M18 70 H96', 8) + tube('M28 74 V94') + tube('M88 74 V94') +
+        rail(`M100 70 L${f(r)}`) + pivot([100, 70]) + person(P) + roller(r)
+    }
+  }
+
+  S.legExt = {
+    A: { head: [48, 15], neck: [46, 24], hip: [50, 56],
+      arms: [[[46, 28], [48, 44], [57, 58]]],
+      legs: [[[50, 56], [74, 57], [76, 79], [82, 83]]], farLegs: [[[50, 56], [71, 59], [72, 81], [78, 85]]] },
+    B: { head: [48, 15], neck: [46, 24], hip: [50, 56],
+      arms: [[[46, 28], [48, 44], [57, 58]]],
+      legs: [[[50, 56], [74, 57], [98, 55], [104, 52]]], farLegs: [[[50, 56], [71, 59], [95, 57], [101, 54]]] },
+    draw: (P) => {
+      const [, k, a] = P.legs[0], r = perp(k, a, 6)
+      return floor(10, 142) + stack(16, 30) + tube('M30 94 V18') + tube('M54 66 V94') + tube('M77 62 V94') + tube('M44 94 H86') +
+        padLine('M36 24 V58', 8) + padLine('M40 63 H72', 6) +
+        rail(`M77 60 L${f(r)}`) + pivot([77, 60]) + grip([54, 61], [61, 61]) + person(P) + roller(r)
+    }
+  }
+
+  S.calfRaise = {
+    cycle: [700, 350, 900, 250],
+    A: { head: [80, 9], neck: [79, 18], hip: [79, 44],
+      legs: [[[79, 44], [80, 62], [82, 82], [92, 84]]], farLegs: [[[79, 44], [77, 63], [78, 83], [88, 85]]],
+      arms: [[[79, 22], [87, 32], [92, 23]]] },
+    B: { head: [80, 2], neck: [79, 11], hip: [79, 37],
+      legs: [[[79, 37], [80, 55], [82, 73], [92, 84]]], farLegs: [[[79, 37], [77, 56], [78, 74], [88, 85]]],
+      arms: [[[79, 15], [85, 26], [92, 23]]] },
+    draw: (P) => floor(40, 150) + stack(126, 34) + tube('M118 94 V10') + tube('M118 22 H84') +
+      padLine('M66 89 H96', 7) + person(P) + padLine('M70 19 H90', 7)
+  }
+
+  S.crunch = {
+    A: { head: [49, 77], neck: [58, 79], hip: [84, 84],
+      legs: [[[84, 84], [102, 66], [116, 85], [123, 85]]], farLegs: [[[84, 84], [99, 68], [112, 86], [119, 86]]],
+      arms: [[[60, 80], [66, 67], [54, 69]]] },
+    B: { head: [57, 60], neck: [63, 67], hip: [84, 84],
+      legs: [[[84, 84], [102, 66], [116, 85], [123, 85]]], farLegs: [[[84, 84], [99, 68], [112, 86], [119, 86]]],
+      arms: [[[64, 69], [72, 58], [60, 56]]] },
+    draw: (P) => padLine('M16 90 H144', 4) + person(P)
+  }
+
+  S.shoulderPress = {
+    A: { head: [48, 19], neck: [47, 28], hip: [51, 58],
+      legs: [[[51, 58], [74, 58], [75, 88], [82, 88]]], farLegs: [[[51, 58], [71, 60], [71, 88], [78, 88]]],
+      arms: [[[48, 31], [61, 39], [61, 25]]], farArms: [[[48, 33], [60, 42], [60, 29]]] },
+    B: { head: [48, 19], neck: [47, 28], hip: [51, 58],
+      legs: [[[51, 58], [74, 58], [75, 88], [82, 88]]], farLegs: [[[51, 58], [71, 60], [71, 88], [78, 88]]],
+      arms: [[[48, 31], [56, 18], [61, 5]]], farArms: [[[48, 33], [55, 21], [60, 9]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(24, 150) + stack(130, 36) + tube('M55 68 V94') + tube('M45 94 H65') + tube('M114 94 V6') +
+        padLine('M37 16 V60', 8) + padLine('M42 66 H70', 6) +
+        tube(`M${f([w[0] + 2, w[1] + 4])} L114 16`) + pivot([114, 16]) + person(P) + hgrip(w, 7)
+    }
+  }
+
+  S.lateralRaise = {
+    A: { head: [80, 13], neck: [80, 22], hip: [80, 54],
+      legs: [[[80, 54], [72, 74], [70, 92]], [[80, 54], [88, 74], [90, 92]]],
+      arms: [[[69, 26], [66, 40], [65, 53]], [[91, 26], [94, 40], [95, 53]]] },
+    B: { head: [80, 13], neck: [80, 22], hip: [80, 54],
+      legs: [[[80, 54], [72, 74], [70, 92]], [[80, 54], [88, 74], [90, 92]]],
+      arms: [[[69, 26], [55, 28], [41, 27]], [[91, 26], [105, 28], [119, 27]]] },
+    draw: (P) => floor(40, 120) + person(P, { front: true }) + dbFront(P.arms[0][2]) + dbFront(P.arms[1][2])
+  }
+
+  // Обратная бабочка — вид со спины: руки из положения «вперёд» (укорочены) разводятся в стороны.
+  S.reverseFly = {
+    A: { head: [80, 14], neck: [80, 23], hip: [80, 56],
+      legs: [[[80, 56], [69, 72], [67, 90]], [[80, 56], [91, 72], [93, 90]]],
+      arms: [[[70, 27], [66, 34], [72, 36]], [[90, 27], [94, 34], [88, 36]]] },
+    B: { head: [80, 14], neck: [80, 23], hip: [80, 56],
+      legs: [[[80, 56], [69, 72], [67, 90]], [[80, 56], [91, 72], [93, 90]]],
+      arms: [[[70, 27], [56, 29], [42, 29]], [[90, 27], [104, 29], [118, 29]]] },
+    draw: (P) => floor(14, 146) + stack(22, 40) + tube('M44 10 H116') + tube('M44 10 V30') + tube('M116 10 V30') + tube('M80 66 V94') +
+      padLine('M64 62 H96', 6) + person(P, { front: true }) +
+      padLine(`M${f([P.arms[0][2][0], P.arms[0][2][1] - 10])} V${P.arms[0][2][1] + 10}`, 5) +
+      padLine(`M${f([P.arms[1][2][0], P.arms[1][2][1] - 10])} V${P.arms[1][2][1] + 10}`, 5)
+  }
+
+  S.abMachine = {
+    A: { head: [55, 18], neck: [54, 27], hip: [52, 58],
+      legs: [[[52, 58], [75, 58], [76, 88], [83, 88]]], farLegs: [[[52, 58], [72, 60], [72, 88], [79, 88]]],
+      arms: [[[54, 31], [67, 39], [64, 27]]] },
+    B: { head: [74, 30], neck: [70, 38], hip: [52, 58],
+      legs: [[[52, 58], [75, 58], [76, 88], [83, 88]]], farLegs: [[[52, 58], [72, 60], [72, 88], [79, 88]]],
+      arms: [[[69, 41], [82, 50], [76, 39]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(10, 140) + stack(14, 36) + tube('M30 94 V8') + tube('M54 68 V94') + tube('M44 94 H66') +
+        padLine('M40 65 H68', 6) + padLine('M36 30 L40 58', 8) +
+        tube(`M24 6 L${f([w[0] + 2, w[1] - 2])}`) + pivot([24, 6]) + person(P) + roller([w[0] + 4, w[1] + 1])
+    }
+  }
+
+  // Жим штанги лёжа — опорное упражнение
+  S.benchPress = {
+    A: { head: [36, 64], neck: [45, 67], hip: [84, 70],
+      legs: [[[84, 70], [102, 60], [106, 90], [113, 90]]], farLegs: [[[84, 70], [98, 63], [101, 90], [108, 90]]],
+      arms: [[[48, 66], [57, 79], [53, 59]]], farArms: [[[48, 69], [56, 82], [52, 62]]] },
+    B: { head: [36, 64], neck: [45, 67], hip: [84, 70],
+      legs: [[[84, 70], [102, 60], [106, 90], [113, 90]]], farLegs: [[[84, 70], [98, 63], [101, 90], [108, 90]]],
+      arms: [[[48, 66], [52, 50], [53, 34]]], farArms: [[[48, 69], [51, 53], [52, 37]]] },
+    draw: (P) => {
+      const w = P.arms[0][2]
+      return floor(16, 144) + tube('M30 94 V26') + tube('M26 30 H36') + tube('M38 80 V94') + tube('M90 80 V94') + padLine('M26 77 H98', 8) +
+        `<rect class="wt" x="${w[0] - 3.5}" y="${w[1] - 15}" width="7" height="30" rx="2"/>` + person(P) + circle(w, 2.6, 'pulley')
+    },
+  }
+
+  // Велотренажёр: педали идут по кругу (loop), ноги считаются через IK
+  S.bike = {
+    loop: 2200,
+    pose: (t) => {
+      const C = [94, 78], r = 8, a = t * Math.PI * 2
+      const p1 = [C[0] + r * Math.cos(a), C[1] + r * Math.sin(a)]
+      const p2 = [C[0] - r * Math.cos(a), C[1] - r * Math.sin(a)]
+      const H = [66, 40]
+      return { head: [88, 14], neck: [85, 22], hip: H,
+        legs: [[H, ik(H, p1, 22, 22, 1), p1, [p1[0] + 6, p1[1]]]],
+        farLegs: [[H, ik(H, p2, 22, 22, 1), p2, [p2[0] + 6, p2[1]]]],
+        arms: [[[84, 26], [98, 34], [108, 32]]], p1, p2 }
+    },
+    draw: (P) => floor(30, 140) + tube('M70 44 L94 78') + tube('M94 78 L108 40') + tube('M108 40 V30') +
+      tube('M58 94 H80') + tube('M69 94 V46') + tube('M110 94 H130') + tube('M120 94 V64') +
+      circle([120, 70], 13, 'wheel') + circle([120, 70], 3, 'pulley') + rail(`M94 78 L${f(P.p1)}`) + rail(`M94 78 L${f(P.p2)}`) +
+      padLine('M60 38 H74', 6) + grip([102, 30], [116, 30]) + person(P),
+  }
+
+  // Эллипс: стопы по овалу, рукоятки качаются
+  S.elliptical = {
+    loop: 2400,
+    pose: (t) => {
+      const a = t * Math.PI * 2, C = [92, 80]
+      const p1 = [C[0] + 16 * Math.cos(a), C[1] + 4 * Math.sin(a)]
+      const p2 = [C[0] - 16 * Math.cos(a), C[1] - 4 * Math.sin(a)]
+      const H = [82, 46]
+      const sw = Math.sin(a) * 6
+      const h1 = [104 - sw, 40], h2 = [104 + sw, 40]
+      return { head: [84, 12], neck: [83, 21], hip: H,
+        legs: [[H, ik(H, p1, 22, 22, 1), p1, [p1[0] + 7, p1[1]]]],
+        farLegs: [[H, ik(H, p2, 22, 22, 1), p2, [p2[0] + 7, p2[1]]]],
+        arms: [[[83, 26], ik([83, 26], h1, 14, 14, 1), h1]], farArms: [[[83, 28], ik([83, 28], h2, 14, 14, 1), h2]], p1, p2, h1, h2 }
+    },
+    draw: (P) => floor(30, 140) + tube('M118 94 V20') + tube('M110 20 H126') + circle([118, 60], 11, 'wheel') + circle([118, 60], 3, 'pulley') +
+      rail(`M118 60 L${f(P.p1)}`) + rail(`M118 60 L${f(P.p2)}`) + rail(`M118 22 L${f(P.h1)}`) + rail(`M118 22 L${f(P.h2)}`) +
+      padLine(`M${f([P.p1[0] - 6, P.p1[1] + 2])} H${P.p1[0] + 12}`, 4) + padLine(`M${f([P.p2[0] - 6, P.p2[1] + 2])} H${P.p2[0] + 12}`, 4) +
+      tube('M60 94 H126') + person(P) + vgrip(P.h1, 6),
+  }
+
+  S.plank = {
+    cycle: [1600, 0, 1600, 0], linear: true,
+    A: { head: [48, 67], neck: [56, 72], hip: [86, 77],
+      legs: [[[86, 77], [108, 81], [128, 85], [135, 86]]], farLegs: [[[86, 77], [108, 82], [126, 86], [133, 87]]],
+      arms: [[[57, 74], [57, 85], [43, 85]]] },
+    B: { head: [48, 66.5], neck: [56, 71.5], hip: [86, 76.5],
+      legs: [[[86, 76.5], [108, 81], [128, 85], [135, 86]]], farLegs: [[[86, 76.5], [108, 82], [126, 86], [133, 87]]],
+      arms: [[[57, 73.5], [57, 85], [43, 85]]] },
+    draw: (P) => padLine('M16 90 H144', 4) + person(P)
+  }
+
+  // ── Анимация ──────────────────────────────────────────────
+  const easeOut = (x) => 1 - Math.pow(1 - x, 2.2)
+  const easeInOut = (x) => x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2
+  const DEFAULT_CYCLE = [850, 250, 1400, 400]   // A→B, пауза, B→A, пауза (мс)
+
+  function phase(scene, ms) {
+    if (scene.loop) return (ms % scene.loop) / scene.loop
+    const [up, h1, down, h2] = scene.cycle || DEFAULT_CYCLE
+    const total = up + h1 + down + h2, c = ms % total
+    const ez = scene.linear ? easeInOut : easeOut
+    if (c < up) return ez(c / up)
+    if (c < up + h1) return 1
+    if (c < up + h1 + down) return 1 - (scene.linear ? easeInOut : easeInOut)((c - up - h1) / down)
+    return 0
+  }
+
+  const frame = (name, t) => { const s = S[name]; return s.draw(s.pose ? s.pose(t) : t === 0 ? s.A : t === 1 ? s.B : lerp(s.A, s.B, t)) }
+
+  const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  const live = new Set()
+  let raf = 0, last = 0
+  const io = typeof IntersectionObserver === 'function'
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((en) => en.isIntersecting ? live.add(en.target) : live.delete(en.target))
+        if (live.size && !raf) raf = requestAnimationFrame(loop)
+      }, { rootMargin: '40px' })
+    : null
+
+  function loop(now) {
+    raf = 0
+    if (now - last < 33) { raf = requestAnimationFrame(loop); return }
+    last = now
+    for (const svg of live) {
+      if (!svg.isConnected) { live.delete(svg); continue }
+      const name = svg.dataset.pic
+      // Выполненное упражнение — замираем в начальной позе.
+      const t = svg.closest('.done') ? 0 : phase(S[name], now + (svg.dataset.phase | 0))
+      const key = t.toFixed(3)
+      if (svg.dataset.t !== key) { svg.dataset.t = key; svg.innerHTML = frame(name, t) }
+    }
+    if (live.size) raf = requestAnimationFrame(loop)
+  }
+
+  function observe(root) {
+    if (!io || reduced) return
+    root.querySelectorAll('svg.pic[data-pic]').forEach((svg, i) => { svg.dataset.phase = i * 230; io.observe(svg) })
+  }
+
+  const NO_MACHINE = ['lateralRaise', 'crunch', 'plank', 'treadmill', 'bike', 'elliptical']
+  function machine(name) {
+    machineOnly = true
+    try { return S[name].draw(S[name].A) } finally { machineOnly = false }
+  }
+
+  return {
+    hasMachine: (name) => !NO_MACHINE.includes(name),
+    machineSvg: (name, label) => `<svg class="pic" viewBox="0 0 160 100" role="img" aria-label="${label || ''}">${machine(name)}</svg>`,
+    names: Object.keys(S),
+    svg: (name, label) => `<svg class="pic" viewBox="0 0 160 100" role="img" aria-label="${label || ''}" data-pic="${name}" data-t="0.000">${frame(name, 0)}</svg>`,
+    frame,
+    observe,
+  }
+})()
+
+</script>
+<script>
+(() => {
+  // ── Упражнения ────────────────────────────────────────────
+  // kind: machine — вес на тренажёре (шаг 2,5 кг), db — гантели (шаг 1 кг), body — свой вес.
+  const EX = {
+    'bench-press': { photo: 'скамья для жима лёжа со стойками тренажёр фото', ratio: 1.0, name: 'Жим штанги лёжа', pic: 'benchPress', kind: 'machine',
+      tech: 'Лопатки сведены, стопы на полу. Опускай гриф к середине груди и выжимай вверх, локти под углом около 45° к корпусу.' },
+    'chest-press': { photo: 'тренажёр жим от груди сидя грузоблочный фото', ratio: 1.0, name: 'Жим от груди в тренажёре', pic: 'chestPress', kind: 'machine',
+      tech: 'Спина прижата к спинке, рукояти на уровне середины груди. Выжимай рукояти вперёд и плавно возвращай назад.' },
+    'incline-db': { photo: 'наклонная скамья для жима гантелей фото', ratio: 0.3, name: 'Жим гантелей на наклонной скамье', pic: 'inclineDB', kind: 'db',
+      tech: 'Спинка скамьи под 30–45°. Опускай гантели к верхней части груди и выжимай вверх.' },
+    'pec-deck': { photo: 'тренажёр бабочка сведение рук фото', ratio: 0.8, name: 'Сведение рук в тренажёре', pic: 'pecDeck', kind: 'machine',
+      tech: 'Локти слегка согнуты, на уровне груди. Своди рукояти перед собой, задержись на секунду и медленно разводи.' },
+    'pushdown': { photo: 'верхний блок кроссовер тренажёр фото', ratio: 0.6, name: 'Разгибание рук на верхнем блоке', pic: 'pushdown', kind: 'machine',
+      tech: 'Локти прижаты к бокам и не двигаются. Разгибай руки вниз до конца, вверх — до уровня груди.' },
+    'pulldown': { photo: 'тренажёр вертикальная тяга верхний блок фото', ratio: 1.0, name: 'Вертикальная тяга', pic: 'pulldown', kind: 'machine',
+      tech: 'Хват чуть шире плеч, грудь вперёд. Тяни рукоять к верхней части груди, локти идут вниз, без раскачки.' },
+    'row': { photo: 'тренажёр горизонтальная тяга нижний блок сидя фото', ratio: 1.0, name: 'Горизонтальная тяга', pic: 'seatedRow', kind: 'machine',
+      tech: 'Спина прямая, колени слегка согнуты. Тяни рукоять к животу и своди лопатки, корпус назад не отклоняй.' },
+    'chest-row': { photo: 'тренажёр рычажная тяга с упором в грудь фото', ratio: 0.9, name: 'Тяга в тренажёре с упором грудью', pic: 'chestRow', kind: 'machine',
+      tech: 'Грудь прижата к упору. Тяни рукояти локтями назад вдоль корпуса и своди лопатки.' },
+    'cable-curl': { photo: 'нижний блок кроссовер сгибание рук тренажёр фото', ratio: 0.45, name: 'Сгибание рук на блоке', pic: 'cableCurl', kind: 'machine',
+      tech: 'Локти прижаты к бокам. Сгибай руки к плечам без рывков и медленно опускай.' },
+    'leg-press': { photo: 'тренажёр жим ногами 45 градусов фото', ratio: 2.5, name: 'Жим ногами', pic: 'legPress', kind: 'machine',
+      tech: 'Поясница прижата к спинке, стопы на ширине плеч. Опускай платформу до угла в коленях около 90° и выжимай, не выпрямляя колени до упора.' },
+    'leg-curl': { photo: 'тренажёр сгибание ног лёжа фото', ratio: 0.7, name: 'Сгибание ног', pic: 'legCurl', kind: 'machine',
+      tech: 'Валик над пятками, колени у края скамьи. Сгибай ноги к ягодицам, таз от скамьи не отрывай.' },
+    'leg-ext': { photo: 'тренажёр разгибание ног сидя фото', ratio: 0.8, name: 'Разгибание ног', pic: 'legExt', kind: 'machine',
+      tech: 'Колени на одной линии с осью тренажёра, валик на голени у стопы. Разгибай ноги до прямых и медленно опускай.' },
+    'calf': { photo: 'тренажёр подъём на носки стоя фото', ratio: 1.5, name: 'Подъёмы на носки', pic: 'calfRaise', kind: 'machine',
+      tech: 'Носки на краю платформы. Опусти пятки как можно ниже, поднимись на носки как можно выше и задержись на секунду.' },
+    'abs': { name: 'Пресс', pic: 'crunch', kind: 'body',
+      tech: 'Лёжа на спине, колени согнуты. Отрывай лопатки от пола за счёт пресса, голову руками не тяни.' },
+    'shoulder-press': { photo: 'тренажёр жим на плечи сидя фото', ratio: 0.6, name: 'Жим на плечи в тренажёре', pic: 'shoulderPress', kind: 'machine',
+      tech: 'Спина прижата, рукояти на уровне плеч. Выжимай вверх без рывка и плавно опускай.' },
+    'lateral': { ratio: 0.15, name: 'Подъём гантелей в стороны', pic: 'lateralRaise', kind: 'db',
+      tech: 'Локти чуть согнуты. Поднимай гантели через стороны до уровня плеч, корпусом не помогай.' },
+    'reverse-fly': { photo: 'тренажёр обратная бабочка задняя дельта фото', ratio: 0.6, name: 'Обратная бабочка', pic: 'reverseFly', kind: 'machine',
+      tech: 'Сядь лицом к спинке, грудь прижата. Разводи почти прямые руки назад до линии плеч и своди лопатки.' },
+    'ab-machine': { photo: 'тренажёр для пресса скручивания сидя фото', ratio: 0.6, name: 'Скручивания / тренажёр на пресс', pic: 'abMachine', kind: 'machine',
+      tech: 'Скручивайся, приближая грудь к тазу: работает пресс, а не руки. Без тренажёра — то же самое на полу.' },
+    'plank': { name: 'Планка', pic: 'plank', kind: 'body',
+      tech: 'Опора на предплечья и носки, тело — прямая линия. Держи 30–60 секунд, поясницу не прогибай.' },
+  }
+
+  // ── Неделя ───────────────────────────────────────────────
+  // Строка упражнения: [ключ, подходы × повторения, кружков, доп. текст, сколько кружков достаточно]
+  const WARM = { label: 'Разминка', name: 'Беговая дорожка', time: '8–10 минут', tech: 'Начни с быстрого шага, потом лёгкий бег или ходьба в горку.' }
+  const COOL = { label: 'В конце', name: 'Лёгкое кардио', time: '5–10 минут', tech: 'Дорожка или велотренажёр в спокойном темпе.' }
+
+  const DAYS = [
+    { key: 'mon', name: 'Понедельник', short: 'Пн', next: 'в следующий понедельник', title: 'Грудь + трицепс', min: 50,
+      before: WARM, after: COOL,
+      items: [['chest-press', '3 × 10–12', 3], ['incline-db', '3 × 10', 3], ['pec-deck', '3 × 12', 3], ['pushdown', '3 × 12', 3],
+        ['abs', '3 × 15', 3], ['reverse-fly', '3 × 12', 3]] },
+    { key: 'tue', name: 'Вторник', short: 'Вт', next: 'в следующий вторник', title: 'Спина + бицепс', min: 50,
+      before: WARM, after: COOL,
+      items: [['pulldown', '3 × 10–12', 3], ['row', '3 × 10–12', 3], ['chest-row', '3 × 10', 3], ['cable-curl', '3 × 12', 3],
+        ['reverse-fly', '3 × 12', 3], ['plank', '2–3 подхода', 3, null, 2]] },
+    { key: 'wed', name: 'Среда', short: 'Ср', next: 'в следующую среду', title: 'Ноги', min: 50,
+      before: WARM,
+      items: [['leg-press', '3 × 10–12', 3], ['leg-curl', '3 × 12', 3], ['leg-ext', '3 × 12', 3], ['calf', '3 × 15', 3],
+        ['abs', '3 подхода', 3, 'По 15–20 повторений.'], ['plank', '2–3 подхода', 3, null, 2]] },
+    { key: 'thu', name: 'Четверг', short: 'Чт', next: 'в следующий четверг', title: 'Плечи + корпус', min: 45,
+      before: WARM,
+      items: [['shoulder-press', '3 × 10', 3], ['lateral', '3 × 12–15', 3], ['reverse-fly', '3 × 12', 3], ['ab-machine', '3 × 12–15', 3],
+        ['plank', '2–3 подхода', 3, null, 2], ['cable-curl', '3 × 12', 3], ['pushdown', '3 × 12', 3]] },
+    { key: 'fri', name: 'Пятница', short: 'Пт', next: 'в следующую пятницу', title: 'Руки + пресс', min: 45,
+      before: WARM, after: COOL,
+      items: [['cable-curl', '3 × 12', 3], ['pushdown', '3 × 12', 3], ['lateral', '3 × 12–15', 3], ['ab-machine', '3 × 12–15', 3],
+        ['abs', '3 × 15', 3], ['pec-deck', '3 × 12', 3], ['row', '3 × 10–12', 3]] },
+    { key: 'sat', name: 'Суббота', short: 'Сб', next: 'в следующую субботу', title: 'Лёгкая тренировка всего тела', min: 45,
+      before: { label: 'Кардио', name: 'Беговая дорожка', time: '15–20 минут', tech: 'Ровный темп: быстрая ходьба в горку или лёгкий бег.' },
+      items: [['chest-press', '2 × 12', 2], ['pulldown', '2 × 12', 2], ['leg-press', '2 × 12', 2], ['shoulder-press', '2 × 12', 2], ['abs', '2 × 15', 2],
+        ['row', '2 × 12', 2], ['lateral', '2 × 12', 2]] },
+    { key: 'sun', name: 'Воскресенье', short: 'Вс', rest: true },
+  ]
+  DAYS.forEach((d) => {
+    if (d.items) d.items = d.items.map(([ex, reps, sets, note, need]) => ({ ex, reps, sets, note, need: need || sets }))
+  })
+
+  // ── Хранение ─────────────────────────────────────────────
+  // moy-zal:weights            — вес по упражнению каждого дня: { "mon:chest-press": 35 }
+  // moy-zal:session:2026-10-07 — подходы только текущей тренировки (старые даты удаляются)
+  const W_KEY = 'moy-zal:weights'
+  const S_PREFIX = 'moy-zal:session:'
+
+  const read = (k, fallback) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback } catch { return fallback } }
+  const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)) } catch {} }
+
+  const dateKey = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const dayIndex = (d) => (d.getDay() + 6) % 7
+
+  function cleanOldSessions(today) {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith(S_PREFIX) && k !== S_PREFIX + today) localStorage.removeItem(k)
+      }
+    } catch {}
+  }
+
+  // moy-zal:profile — ответы первой настройки: { exp, ref }  (ref — вес жима от груди на 10 раз)
+  // moy-zal:bumps   — какие веса приложение подняло после прошлой тренировки: { "mon:chest-press": 2.5 }
+  const P_KEY = 'moy-zal:profile'
+  const B_KEY = 'moy-zal:bumps'
+  let weights = read(W_KEY, {})
+  let profile = read(P_KEY, null)
+  let bumps = read(B_KEY, {})
+  let now = new Date()
+  let today = dateKey(now)
+  let session = read(S_PREFIX + today, {})
+  let selected = dayIndex(now)
+  cleanOldSessions(today)
+
+  const dayState = (key) => (session[key] ||= { sets: {}, before: false, after: false, finished: false })
+  const saveSession = () => write(S_PREFIX + today, session)
+
+  // ── Подбор веса ──────────────────────────────────────────
+  // Опорное упражнение — жим штанги лёжа на 10 раз (вес вместе с грифом, гриф 20 кг). Остальные веса
+  // считаются от него по коэффициентам (EX[].ratio), пятница легче на 20%.
+  const EXP = [
+    { id: 'none',  label: 'Никогда не занимался', hint: 'Начнём легко: главное — техника', k: 0.85, ref: 20 },   // ref — пустой гриф
+    { id: 'long',  label: 'Занимался, но давно',  hint: 'Перерыв больше 3 месяцев',        k: 0.9,  ref: 30 },
+    { id: 'now',   label: 'Занимаюсь сейчас',     hint: 'Без перерыва или перерыв недолгий. 4 рабочих подхода', k: 1,  ref: 40 },
+  ]
+  // Режим: меняет повторения, вес и кардио.
+  const GOALS = [
+    { id: 'lose', label: 'Похудеть', hint: 'Больше повторений, легче вес, 20 минут кардио на дорожке, велотренажёре и эллипсе', k: 0.85, reps: (n) => `${n} × 15`, warm: '10–12 минут', cool: '15–20 минут', keepCool: true, rest: '45 секунд', note: 'лёгкий вес, 15 повторений, короткий отдых, больше кардио' },
+    { id: 'both', label: 'Похудеть и подкачаться', hint: 'Средний вес, 10–12 повторений, кардио в конце', k: 1, reps: null, warm: null, cool: null, keepCool: true, rest: '60–90 секунд', note: 'средний вес, 10–12 повторений, кардио в конце' },
+    { id: 'gain', label: 'Набрать мышцы', hint: 'Тяжелее вес, 4 подхода по 8–10, минимум кардио', k: 1.1, reps: (n) => `${n} × 8–10`, warm: '5–8 минут', cool: null, keepCool: false, rest: '90–120 секунд', note: 'тяжёлый вес, 8–10 повторений, долгий отдых, без кардио в конце' },
+  ]
+  // Кардио в конце для режима «Похудеть»: тренажёры чередуются по дням
+  const LOSE_CARDIO = {
+    mon: { name: 'Беговая дорожка', pic: 'treadmill', time: '20 минут', tech: 'Интервалы: 1 минута быстро, 2 минуты шагом.' },
+    tue: { name: 'Велотренажёр', pic: 'bike', time: '20 минут', tech: 'Ровный темп, чтобы можно было говорить, но с трудом.' },
+    wed: { name: 'Эллипс', pic: 'elliptical', time: '15–20 минут', tech: 'Средний темп, спина прямая, толкай и руками, и ногами.' },
+    thu: { name: 'Велотренажёр', pic: 'bike', time: '20 минут', tech: 'Последние 5 минут — сопротивление побольше.' },
+    fri: { name: 'Беговая дорожка', pic: 'treadmill', time: '20 минут', tech: 'Ходьба в горку: наклон побольше, темп спокойный.' },
+    sat: { name: 'Эллипс', pic: 'elliptical', time: '20 минут', tech: 'Спокойный темп: день лёгкий, главное — время.' },
+  }
+  const goalOf = () => GOALS.find((x) => x.id === (profile && profile.goal)) || GOALS[1]
+  const TIMES = [
+    { id: 45, label: '45 минут', hint: '4 упражнения', n: 4 },
+    { id: 60, label: 'Час',      hint: '5 упражнений', n: 5 },
+    { id: 90, label: 'Полтора часа', hint: '6–7 упражнений', n: 7 },
+  ]
+  // Упражнения дня с учётом времени из настройки. Разминка и кардио не считаются.
+  const planOf = (day) => {
+    const t = TIMES.find((x) => x.id === (profile && profile.time)) || TIMES[1]
+    const g = goalOf()
+    // Рабочих подходов: 4, если опыт «занимаюсь сейчас» или цель «набрать мышцы», иначе как в программе.
+    const extra = day.key !== 'sat' && (g.id === 'gain' || (profile && profile.exp === 'now')) ? 1 : 0
+    return day.items.slice(0, t.n).map((it) => {
+      const plus = it.reps.includes('×') ? extra : 0
+      const sets = it.sets + plus, need = it.need + plus
+      const reps = it.reps.includes('×') ? (g.reps ? g.reps(sets) : it.reps.replace(/^\d+/, String(sets))) : it.reps
+      return { ...it, sets, need, reps }
+    })
+  }
+  // Кардио дня с учётом режима
+  const cardioOf = (day) => {
+    const g = goalOf()
+    const before = day.before && { ...day.before, time: g.warm && day.key !== 'sat' ? g.warm : day.before.time }
+    let after = day.after && g.keepCool ? { ...day.after, time: g.cool || day.after.time } : null
+    if (g.id === 'lose') after = { label: 'В конце', ...LOSE_CARDIO[day.key] }
+    return { before, after }
+  }
+  const minutesOf = (day, items) => (day.before ? (day.key === 'sat' ? 18 : goalOf().id === 'lose' ? 12 : goalOf().id === 'gain' ? 7 : 10) : 0) + items.length * 8 + (day.after ? (goalOf().id === 'lose' ? 17 : 7) : 0)
+  const stepOf = (kind) => (kind === 'db' ? 1 : 2.5)
+  const roundTo = (v, step) => Math.round(v / step) * step
+  const minOf = (kind) => (kind === 'db' ? 2 : 5)
+
+  function suggestWeight(dayKey, exKey, prof) {
+    const ex = EX[exKey]
+    if (ex.kind === 'body' || !prof) return null
+    const exp = EXP.find((x) => x.id === prof.exp) || EXP[0]
+    const ref = prof.ref || exp.ref
+    const dayK = dayKey === 'sat' ? 0.8 : 1
+    const g = GOALS.find((x) => x.id === prof.goal) || GOALS[1]
+    return Math.max(minOf(ex.kind), roundTo(ref * ex.ratio * exp.k * g.k * dayK, stepOf(ex.kind)))
+  }
+
+  function applyProfile(prof) {
+    profile = prof
+    write(P_KEY, prof)
+    weights = {}
+    bumps = {}
+    for (const d of DAYS) {
+      if (d.rest) continue
+      for (const it of d.items) {
+        const w = suggestWeight(d.key, it.ex, prof)
+        if (w != null) weights[`${d.key}:${it.ex}`] = w
+      }
+    }
+    write(W_KEY, weights); write(B_KEY, bumps)
+  }
+
+  // После тренировки: все нужные подходы сделаны — в следующий раз вес на шаг больше.
+  function progress(day, st) {
+    const made = []
+    for (const it of planOf(day)) {
+      const ex = EX[it.ex]
+      if (ex.kind === 'body' || !exDone(st, it)) continue
+      const key = `${day.key}:${it.ex}`
+      if (weights[key] == null) continue
+      const step = stepOf(ex.kind)
+      weights[key] = roundTo(weights[key] + step, step)
+      bumps[key] = step
+      made.push(key)
+    }
+    st.bumped = made
+    write(W_KEY, weights); write(B_KEY, bumps)
+  }
+  function unprogress(day, st) {
+    for (const key of st.bumped || []) {
+      if (weights[key] != null) weights[key] = roundTo(weights[key] - (bumps[key] || 0), 0.5)
+      delete bumps[key]
+    }
+    st.bumped = []
+    write(W_KEY, weights); write(B_KEY, bumps)
+  }
+
+  // ── Форматирование ───────────────────────────────────────
+  const fmtW = (n) => (n == null || n === '' ? '' : String(n).replace('.', ','))
+  const parseW = (s) => {
+    const n = parseFloat(String(s).replace(',', '.').replace(/[^\d.]/g, ''))
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 10) / 10 : null
+  }
+  const plural = (n, one, few, many) => {
+    const m10 = n % 10, m100 = n % 100
+    if (m10 === 1 && m100 !== 11) return one
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few
+    return many
+  }
+  function formatToday(d) {
+    const s = new Intl.DateTimeFormat('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }).format(d)
+    return s.charAt(0).toUpperCase() + s.slice(1)
+  }
+
+  const CHECK = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 10.5l3.2 3.2L15 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+
+  const exDone = (st, it) => (st.sets[it.ex] || []).filter(Boolean).length >= it.need
+
+  // ── Отрисовка ────────────────────────────────────────────
+  const app = document.getElementById('app')
+
+  function cardioCard(c, slot, st) {
+    const done = st[slot]
+    return `<article class="card cardio${done ? ' done' : ''}">
+      <div class="cardio-row">
+        <div class="cardio-pic">${PICS.svg(c.pic || 'treadmill', c.name)}</div>
+        <div class="cardio-body">
+          <span class="eyebrow">${c.label}</span>
+          <h3>${c.name}</h3>
+          <p class="cardio-time">${c.time}</p>
+        </div>
+        <button type="button" class="check" role="checkbox" aria-checked="${done}"
+          aria-label="Выполнено: ${c.name}" data-cardio="${slot}" data-focus="c-${slot}">${CHECK}</button>
+      </div>
+      <p class="cardio-tech">${c.tech}</p>
+    </article>`
+  }
+
+  function exerciseCard(day, it, i, st) {
+    const ex = EX[it.ex]
+    const id = `${day.key}-${it.ex}`
+    const marks = st.sets[it.ex] || []
+    const done = exDone(st, it)
+    const w = weights[`${day.key}:${it.ex}`]
+
+    const weightRow = ex.kind === 'body'
+      ? `<div class="row"><span class="row-label">Вес</span><span class="bw">Свой вес</span></div>`
+      : `<div class="row">
+          <label class="row-label" for="w-${id}">Вес${
+            bumps[`${day.key}:${it.ex}`] ? `<small class="up">+${fmtW(bumps[`${day.key}:${it.ex}`])} кг после прошлого раза</small>`
+            : ex.kind === 'db' ? '<small>одной гантели</small>' : ''}</label>
+          <div class="stepper">
+            <button type="button" class="step" data-step="${id}" data-dir="-1" data-focus="m-${id}" aria-label="Меньше веса">−</button>
+            <span class="w-field">
+              <input id="w-${id}" class="w-input" data-w="${day.key}:${it.ex}" data-kind="${ex.kind}"
+                inputmode="decimal" autocomplete="off" enterkeyhint="done" placeholder="—" value="${fmtW(w)}">
+              <span class="unit">кг</span>
+            </span>
+            <button type="button" class="step" data-step="${id}" data-dir="1" data-focus="p-${id}" aria-label="Больше веса">+</button>
+          </div>
+        </div>`
+
+    const warm = ex.kind !== 'body'
+      ? `<button type="button" class="set warm" role="checkbox" aria-checked="${!!st.warm?.[it.ex]}"
+          aria-label="Разминочный подход, половина веса" data-warm="${it.ex}" data-focus="w-${it.ex}">${st.warm?.[it.ex] ? CHECK : 'Р'}</button>`
+      : ''
+    const sets = warm + Array.from({ length: it.sets }, (_, n) => {
+      const on = !!marks[n]
+      const opt = n >= it.need
+      return `<button type="button" class="set${opt ? ' opt' : ''}" role="checkbox" aria-checked="${on}"
+        aria-label="Подход ${n + 1}${opt ? ', по желанию' : ''}" data-set="${it.ex}" data-n="${n}"
+        data-focus="s-${it.ex}-${n}">${on ? CHECK : n + 1}</button>`
+    }).join('')
+
+    return `<article class="card ex${done ? ' done' : ''}">
+      <div class="ex-head">
+        <span class="num">${i + 1}</span>
+        <h3>${ex.name}</h3>
+        ${done ? '<span class="done-tag">Готово</span>' : ''}
+      </div>
+      <div class="pic-box">${PICS.svg(ex.pic, ex.name)}</div>
+      ${ex.photo ? `<a class="pic-btn" href="https://yandex.ru/images/search?text=${encodeURIComponent(ex.photo)}" target="_blank" rel="noopener">Фото тренажёра ↗</a>` : ''}
+      <div class="reps">${it.reps}</div>
+      <p class="tech">${ex.tech}${it.note ? ' ' + it.note : ''}${ex.kind !== 'body' ? ' <span class="warm-note">Р — разминочный: половина веса, 12–15 раз.</span>' : ''}</p>
+      ${weightRow}
+      <div class="row sets-row">
+        <span class="row-label">Подходы</span>
+        <div class="sets">${sets}</div>
+      </div>
+    </article>`
+  }
+
+  function render() {
+    let day = DAYS[selected]
+    const isToday = selected === dayIndex(now)
+
+    const focusKey = document.activeElement && document.activeElement.dataset
+      ? document.activeElement.dataset.focus : null
+
+    const head = `<header class="header">
+        <h1>${isToday ? 'Сегодня' : day.name}</h1>
+        <p class="date">${isToday
+          ? formatToday(now)
+          : `Заранее · сегодня ${DAYS[dayIndex(now)].name.toLowerCase()} · <button type="button" class="link" data-day="${dayIndex(now)}">вернуться</button>`}</p>
+      </header>
+      <nav class="days" aria-label="Дни недели">
+        ${DAYS.map((d, i) => `<button type="button" class="day-btn${i === selected ? ' active' : ''}${d.rest ? ' rest' : ''}${i === dayIndex(now) ? ' today' : ''}"
+          data-day="${i}" aria-pressed="${i === selected}" aria-label="${d.name}${d.rest ? ', отдых' : ''}">${d.short}</button>`).join('')}
+      </nav>`
+
+    if (!profile || setupOpen) { renderSetup(); return }
+
+    let body
+    if (day.rest) {
+      body = `<section class="workout"><h2>Отдых</h2><p class="meta">Тренировки нет</p></section>
+        <div class="list"><div class="card rest-card">
+          <p>${isToday ? 'Сегодня восстановление.' : 'В этот день восстановление.'} Можно погулять или сделать лёгкую растяжку.</p>
+          <p>Завтра — <strong>понедельник: ${DAYS[0].title.toLowerCase()}</strong>.</p>
+          <button type="button" class="btn secondary" data-day="0">Посмотреть понедельник</button>
+        </div></div>`
+    } else {
+      const st = dayState(day.key)
+      const items = planOf(day)
+      const cardio = cardioOf(day)
+      const doneCount = items.filter((it) => exDone(st, it)).length
+      const total = items.length
+      day = { ...day, ...cardio, min: minutesOf({ ...day, ...cardio }, items) }
+      const meta = st.finished
+        ? `≈ ${day.min} минут · тренировка закончена`
+        : doneCount
+          ? `≈ ${day.min} минут · готово ${doneCount} из ${total}`
+          : `≈ ${day.min} минут · ${total} ${plural(total, 'упражнение', 'упражнения', 'упражнений')}`
+
+      const cards = [
+        day.before ? cardioCard(day.before, 'before', st) : '',
+        ...items.map((it, i) => exerciseCard(day, it, i, st)),
+        day.after ? cardioCard(day.after, 'after', st) : '',
+      ].join('')
+
+      const end = st.finished
+        ? `<div class="card finished">
+            <h3><span class="check" aria-checked="true" role="img" aria-label="Готово">${CHECK}</span>Тренировка закончена</h3>
+            <p>Сделано ${doneCount} из ${total} ${plural(total, 'упражнения', 'упражнений', 'упражнений')}.${
+              (st.bumped || []).length
+                ? ` Где все подходы сделаны, вес ${day.next} будет на шаг больше — приложение уже подняло его.`
+                : ` Веса сохранены — ${day.next} они будут здесь.`}</p>
+            <button type="button" class="link" data-unfinish data-focus="unfinish">Продолжить тренировку</button>
+          </div>`
+        : `<button type="button" class="btn" data-finish data-focus="finish">Закончить тренировку</button>`
+
+      body = `<section class="workout"><h2>${day.title}</h2><p class="meta">${meta}</p>
+        <p class="mode-line"><strong>${goalOf().label}</strong> · отдых между подходами ${goalOf().rest} · ${goalOf().note}</p></section>
+        <div class="list">${cards}</div>${end}
+        <p class="foot">Режим «${goalOf().label}». Упражнения и веса подобраны по твоим ответам; веса растут после удачных тренировок.
+          Любой вес можно поправить руками. <button type="button" class="link" data-setup>Подобрать заново</button></p>`
+    }
+
+    app.innerHTML = head + body
+
+    if (focusKey) {
+      const el = app.querySelector(`[data-focus="${focusKey}"]`)
+      if (el) el.focus({ preventScroll: true })
+    }
+    PICS.observe(app)
+  }
+
+  // ── Первая настройка ─────────────────────────────────────
+  let draft = { goal: null, exp: null, time: null, ref: null, known: null }
+  let setupOpen = false
+
+  function renderSetup() {
+    const exp = EXP.find((x) => x.id === draft.exp)
+    const ref = draft.ref ?? (exp ? exp.ref : 25)
+    const step2 = exp && draft.known != null
+    const ready = draft.goal && exp && draft.time && draft.known != null && (draft.known === false || ref > 0)
+    const ex = EX['bench-press']
+    app.innerHTML = `<header class="header"><h1>Мой зал</h1><p class="date">Минута на настройку — и веса подберутся сами</p></header>
+      <section class="setup">
+        <div class="card q">
+          <span class="eyebrow">1 из 4</span>
+          <h3>Какая цель?</h3>
+          <div class="choices" role="radiogroup">
+            ${GOALS.map((x) => `<button type="button" role="radio" aria-checked="${draft.goal === x.id}" class="choice${draft.goal === x.id ? ' on' : ''}" data-goal="${x.id}">
+              <strong>${x.label}</strong><small>${x.hint}</small></button>`).join('')}
+          </div>
+        </div>
+        <div class="card q${draft.goal ? '' : ' dim'}">
+          <span class="eyebrow">2 из 4</span>
+          <h3>Как давно ты занимался?</h3>
+          <div class="choices" role="radiogroup">
+            ${EXP.map((x) => `<button type="button" role="radio" aria-checked="${draft.exp === x.id}" class="choice${draft.exp === x.id ? ' on' : ''}" data-exp="${x.id}" ${draft.goal ? '' : 'disabled'}>
+              <strong>${x.label}</strong><small>${x.hint}</small></button>`).join('')}
+          </div>
+        </div>
+        <div class="card q${exp ? '' : ' dim'}">
+          <span class="eyebrow">3 из 4</span>
+          <h3>Сколько времени есть на тренировку?</h3>
+          <div class="choices" role="radiogroup">
+            ${TIMES.map((x) => `<button type="button" role="radio" aria-checked="${draft.time === x.id}" class="choice${draft.time === x.id ? ' on' : ''}" data-time="${x.id}" ${exp ? '' : 'disabled'}>
+              <strong>${x.label}</strong><small>${x.hint} + разминка</small></button>`).join('')}
+          </div>
+        </div>
+        <div class="card q${exp && draft.time ? '' : ' dim'}">
+          <span class="eyebrow">4 из 4</span>
+          <h3>${ex.name}</h3>
+          <div class="pic-box">${PICS.svg(ex.pic, ex.name)}</div>
+          <p class="tech">Это опорное упражнение: по нему приложение рассчитает веса на все остальные. Какой вес ты выжимаешь <strong>10 раз</strong> с нормальной техникой? Вес вместе с грифом (пустой гриф — 20 кг).</p>
+          <div class="choices">
+            <button type="button" role="radio" aria-checked="${draft.known === true}" class="choice${draft.known === true ? ' on' : ''}" data-known="1" ${exp && draft.time ? '' : 'disabled'}><strong>Знаю</strong><small>Укажу вес</small></button>
+            <button type="button" role="radio" aria-checked="${draft.known === false}" class="choice${draft.known === false ? ' on' : ''}" data-known="0" ${exp && draft.time ? '' : 'disabled'}><strong>Не знаю</strong><small>Подберите по опыту, уточню на первой тренировке</small></button>
+          </div>
+          ${draft.known ? `<div class="row">
+            <span class="row-label">Штанга на 10 раз</span>
+            <div class="stepper">
+              <button type="button" class="step" data-refstep="-1" aria-label="Меньше">−</button>
+              <span class="w-field"><input id="ref-w" class="w-input" inputmode="decimal" value="${fmtW(ref)}" data-focus="ref"><span class="unit">кг</span></span>
+              <button type="button" class="step" data-refstep="1" aria-label="Больше">+</button>
+            </div></div>` : ''}
+        </div>
+        <button type="button" class="btn" data-apply ${ready ? '' : 'disabled'}>Рассчитать веса</button>
+        ${profile ? '<button type="button" class="btn secondary" data-cancel>Оставить как есть</button>' : ''}
+      </section>`
+    if (step2 && draft.known && document.activeElement !== document.getElementById('ref-w')) {
+      const el = app.querySelector('[data-focus="ref"]'); if (el && draft.focusRef) { el.focus({ preventScroll: true }); draft.focusRef = false }
+    }
+    PICS.observe(app)
+  }
+
+  // ── Вес ──────────────────────────────────────────────────
+  function saveWeight(key, value) {
+    if (value == null) delete weights[key]
+    else weights[key] = value
+    if (bumps[key]) { delete bumps[key]; write(B_KEY, bumps) }
+    write(W_KEY, weights)
+  }
+
+  app.addEventListener('input', (e) => {
+    const inp = e.target.closest('.w-input')
+    if (!inp) return
+    if (inp.id === 'ref-w') { draft.ref = parseW(inp.value); return }
+    saveWeight(inp.dataset.w, parseW(inp.value))
+  })
+
+  app.addEventListener('change', (e) => {
+    const inp = e.target.closest('.w-input')
+    if (inp && inp.id === 'ref-w') { renderSetup(); return }
+    if (inp) inp.value = fmtW(weights[inp.dataset.w])
+  })
+
+  app.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.closest('.w-input')) e.target.blur()
+  })
+
+  // ── Нажатия ──────────────────────────────────────────────
+  app.addEventListener('click', (e) => {
+    const t = e.target.closest('button')
+    if (!t) return
+    const day = DAYS[selected]
+
+    if (t.dataset.goal) { draft.goal = t.dataset.goal; renderSetup(); return }
+    if (t.dataset.exp) { draft.exp = t.dataset.exp; draft.ref = null; renderSetup(); return }
+    if (t.dataset.time) { draft.time = Number(t.dataset.time); renderSetup(); return }
+    if (t.dataset.known != null) { draft.known = t.dataset.known === '1'; draft.focusRef = draft.known; renderSetup(); return }
+    if (t.dataset.refstep) {
+      const inp = document.getElementById('ref-w')
+      draft.ref = Math.max(0, (parseW(inp.value) ?? 0) + 2.5 * Number(t.dataset.refstep)); renderSetup(); return
+    }
+    if (t.dataset.apply != null) {
+      const exp = EXP.find((x) => x.id === draft.exp)
+      applyProfile({ goal: draft.goal, exp: exp.id, time: draft.time, ref: draft.known ? (draft.ref ?? exp.ref) : exp.ref })
+      draft = { goal: null, exp: null, time: null, ref: null, known: null }; setupOpen = false
+      render(); window.scrollTo({ top: 0 }); return
+    }
+    if (t.dataset.cancel != null) { draft = { goal: null, exp: null, time: null, ref: null, known: null }; setupOpen = false; render(); window.scrollTo({ top: 0 }); return }
+    if (t.dataset.setup != null) { setupOpen = true; draft = { goal: profile.goal, exp: profile.exp, time: profile.time, ref: profile.ref, known: true }; renderSetup(); window.scrollTo({ top: 0 }); return }
+
+    if (t.dataset.day != null) {
+      const fromBottom = t.classList.contains('secondary') || t.classList.contains('link')
+      selected = Number(t.dataset.day)
+      render()
+      if (fromBottom) window.scrollTo({ top: 0 })
+      return
+    }
+
+    if (t.dataset.step) {
+      const inp = document.getElementById('w-' + t.dataset.step)
+      const step = inp.dataset.kind === 'db' ? 1 : 2.5
+      const cur = parseW(inp.value)
+      const next = Math.max(0, (cur ?? 0) + step * Number(t.dataset.dir))
+      const hadBump = !!bumps[inp.dataset.w]
+      inp.value = fmtW(next)
+      saveWeight(inp.dataset.w, next)
+      if (hadBump) render()
+      return
+    }
+
+    const st = day.rest ? null : dayState(day.key)
+    if (!st) return
+
+    if (t.dataset.warm) {
+      st.warm ||= {}
+      st.warm[t.dataset.warm] = !st.warm[t.dataset.warm]
+    } else if (t.dataset.set) {
+      const arr = st.sets[t.dataset.set] || []
+      const n = Number(t.dataset.n)
+      arr[n] = !arr[n]
+      st.sets[t.dataset.set] = arr
+    } else if (t.dataset.cardio) {
+      st[t.dataset.cardio] = !st[t.dataset.cardio]
+    } else if (t.dataset.finish != null) {
+      st.finished = true
+      progress(day, st)
+    } else if (t.dataset.unfinish != null) {
+      st.finished = false
+      unprogress(day, st)
+    } else {
+      return
+    }
+    saveSession()
+    render()
+  })
+
+  // Новый день: открываем его тренировку с чистыми подходами.
+  function tick() {
+    const d = new Date()
+    if (dateKey(d) === today) { now = d; return }
+    now = d
+    today = dateKey(d)
+    session = read(S_PREFIX + today, {})
+    selected = dayIndex(d)
+    cleanOldSessions(today)
+    render()
+  }
+  setInterval(tick, 60000)
+  window.addEventListener('focus', tick)
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') tick() })
+
+  render()
+})()
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {})
+</script>
+</body>
+</html>
