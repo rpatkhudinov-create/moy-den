@@ -2,7 +2,7 @@
 // на телефоне, дальше открываются сразу из кэша, а новая версия подтягивается в фоне.
 // Удаляем только свои старые кэши: у всех сайтов на github.io общий адрес,
 // чужие кэши («Мой день» и другие) трогать нельзя.
-const CACHE = 'moy-zal-v2'
+const CACHE = 'moy-zal-v8'
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png']
 
 self.addEventListener('install', (e) => {
